@@ -53,6 +53,10 @@ jobs:
           curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
         fi
 
+    - name: Use Gradle 8.4
+      run: |
+        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip" > gradle/wrapper/gradle-wrapper.properties
+
     - name: Lint
       run: ./gradlew lint
 
