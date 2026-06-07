@@ -1,0 +1,33 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.security.poc.deviceadminreset'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId "com.security.poc.deviceadminreset"
+        minSdk 21
+        targetSdk 28  // Target API 28 to demonstrate vulnerability
+        versionCode 1
+        versionName "1.0-poc"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+}
