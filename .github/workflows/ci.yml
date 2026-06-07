@@ -47,10 +47,10 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x gradlew
 
-    - name: Generate Gradle Wrapper
+    - name: Download Gradle Wrapper JAR
       run: |
         if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-          gradle wrapper --gradle-version 8.4
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
         fi
 
     - name: Lint
