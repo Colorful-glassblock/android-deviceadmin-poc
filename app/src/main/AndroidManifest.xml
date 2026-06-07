@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.security.poc.deviceadminreset">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Device Admin permission -->
-    <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
-    
     <application
         android:allowBackup="false"
-        android:icon="@mipmap/ic_launcher"
         android:label="DeviceAdmin PoC"
         android:theme="@style/AppTheme">
         
@@ -20,7 +15,6 @@
             </intent-filter>
         </activity>
         
-        <!-- Device Admin Receiver -->
         <receiver
             android:name=".AdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN"

@@ -1,9 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#0f3460</color>
-    <color name="primary_dark">#1a1a2e</color>
-    <color name="accent">#e94560</color>
-    <color name="background">#1a1a2e</color>
-    <color name="text_primary">#e94560</color>
-    <color name="text_secondary">#533483</color>
+    <!-- Material Design 3 Color Scheme - Security Research Theme -->
+    
+    <!-- Primary -->
+    <color name="md_theme_primary">#FFB4AB</color>
+    <color name="md_theme_primaryContainer">#93000A</color>
+    <color name="md_theme_onPrimary">#690005</color>
+    <color name="md_theme_onPrimaryContainer">#FFDAD6</color>
+    
+    <!-- Secondary -->
+    <color name="md_theme_secondary">#E7BDB8</color>
+    <color name="md_theme_secondaryContainer">#5C413D</color>
+    <color name="md_theme_onSecondary">#442A27</color>
+    <color name="md_theme_onSecondaryContainer">#FFDAD6</color>
+    
+    <!-- Tertiary -->
+    <color name="md_theme_tertiary">#E2C28C</color>
+    <color name="md_theme_tertiaryContainer">#5B4320</color>
+    <color name="md_theme_onTertiary">#3A2D07</color>
+    <color name="md_theme_onTertiaryContainer">#FFE0A1</color>
+    
+    <!-- Error -->
+    <color name="md_theme_error">#FFB4AB</color>
+    <color name="md_theme_errorContainer">#93000A</color>
+    <color name="md_theme_onError">#690005</color>
+    <color name="md_theme_onErrorContainer">#FFDAD6</color>
+    
+    <!-- Background & Surface -->
+    <color name="md_theme_background">#1A1110</color>
+    <color name="md_theme_surface">#1A1110</color>
+    <color name="md_theme_surfaceVariant">#534341</color>
+    <color name="md_theme_onBackground">#F1DFDD</color>
+    <color name="md_theme_onSurface">#F1DFDD</color>
+    <color name="md_theme_onSurfaceVariant">#D8C2BE</color>
+    
+    <!-- Outline -->
+    <color name="md_theme_outline">#A08C89</color>
+    <color name="md_theme_outlineVariant">#534341</color>
+    
+    <!-- Legacy compatibility -->
+    <color name="primary">#FFB4AB</color>
+    <color name="primary_dark">#1A1110</color>
+    <color name="accent">#E2C28C</color>
+    <color name="background">#1A1110</color>
+    <color name="text_primary">#F1DFDD</color>
+    <color name="text_secondary">#D8C2BE</color>
 </resources>

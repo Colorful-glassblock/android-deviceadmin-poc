@@ -173,6 +173,60 @@ By using this software, you agree to:
 
 ---
 
+## CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+The project includes automated CI with the following jobs:
+
+| Job | Trigger | Cache | Description |
+|-----|---------|-------|-------------|
+| **Build & Lint** | Push/PR to main, develop | Gradle | Compiles debug APK, runs lint |
+| **Unit Tests** | After build | Gradle | Runs test suite |
+| **Security Scan** | After build | N/A | Secret detection, dependency scan |
+
+### Caching Strategy
+
+- **Gradle Cache**: `~/.gradle/caches` + `~/.gradle/wrapper`
+- Cache key based on `*.gradle*` and `gradle-wrapper.properties` hash
+- Automatic restore on cache hit
+
+### Artifacts
+
+- Debug APK uploaded on every successful build
+- Retention: 30 days
+
+---
+
+## Branch Protection
+
+### `main` branch (Production)
+
+- ✅ **Require PR**: All changes via pull request
+- ✅ **CI Checks**: build, test, security-scan must pass
+- ❌ **Reviews**: Not required (solo developer)
+- ✅ **Force Push**: Blocked
+- ✅ **Deletion**: Blocked
+- ✅ **Admin Enforcement**: Enabled (no bypass)
+
+### `develop` branch (Development)
+
+- ✅ **Require PR**: Changes via pull request
+- ✅ **CI Checks**: build must pass
+- ⚠️ **Reviews**: Not required (faster iteration)
+- ✅ **Force Push**: Allowed (for rebasing)
+- ✅ **Deletion**: Blocked
+
+### Workflow
+
+```
+feature-branch → develop → main
+     ↓              ↓         ↓
+   (local)      (build)   (full CI + review)
+```
+
+---
+
 ## References
 
 - [Android Device Administration API](https://developer.android.com/reference/android/app/admin/DevicePolicyManager)
