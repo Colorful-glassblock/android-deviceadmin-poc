@@ -204,8 +204,7 @@ The project includes automated CI with the following jobs:
 
 - ✅ **Require PR**: All changes via pull request
 - ✅ **CI Checks**: build, test, security-scan must pass
-- ✅ **Reviews**: At least 1 approving review required
-- ✅ **Stale Reviews**: Dismissed on new commits
+- ❌ **Reviews**: Not required (solo developer)
 - ✅ **Force Push**: Blocked
 - ✅ **Deletion**: Blocked
 - ✅ **Admin Enforcement**: Enabled (no bypass)
