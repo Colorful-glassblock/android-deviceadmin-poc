@@ -35,15 +35,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: AVD Cache
-      uses: actions/cache@v4
-      id: avd-cache
-      with:
-        path: |
-          ~/.android/avd/*
-          ~/.android/adb*
-        key: avd-api28
-
     - name: Make gradlew executable
       run: chmod +x gradlew
 
@@ -95,6 +86,19 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
+    - name: Make gradlew executable
+      run: chmod +x gradlew
+
+    - name: Download Gradle Wrapper JAR
+      run: |
+        if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+        fi
+
+    - name: Use Gradle 8.4
+      run: |
+        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip" > gradle/wrapper/gradle-wrapper.properties
+
     - name: Run Tests
       run: ./gradlew test
 
@@ -115,5 +119,3 @@ jobs:
     - name: Dependency Scan
       run: |
         echo "Checking for known vulnerabilities..."
-        # Add your preferred dependency scanning tool here
-        # e.g., OWASP Dependency Check, Snyk, etc.
