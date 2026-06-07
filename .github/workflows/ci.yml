@@ -44,7 +44,7 @@ jobs:
           ~/.android/adb*
         key: avd-api28
 
-    - name: Grant execute permission
+    - name: Make gradlew executable
       run: chmod +x gradlew
 
     - name: Lint
