@@ -1,4 +1,4 @@
-# DeviceAdmin Password Reset PoC
+# Dhizuku Device Owner Password Reset PoC
 
 ## ⚠️ LEGAL DISCLAIMER - READ BEFORE USE
 
@@ -6,70 +6,66 @@
 
 ### Legal Warnings
 
-1. **Unauthorized Access is Illegal**: Using this tool on devices you do not own or have explicit written authorization to test is a criminal offense under:
-   - Computer Fraud and Abuse Act (CFAA) - United States
-   - Computer Misuse Act 1990 - United Kingdom
-   - Section 202c of the German Criminal Code (StGB)
-   - Equivalent laws in most jurisdictions worldwide
+1. **Unauthorized Access is Illegal**: Using this tool on devices you do not own or have explicit written authorization to test is a criminal offense under applicable laws.
 
-2. **Penalties**: Unauthorized use may result in:
-   - Criminal prosecution
-   - Imprisonment (up to 10 years in some jurisdictions)
-   - Substantial fines
-   - Civil liability for damages
-
-3. **Authorization Required**: You MUST have:
+2. **Authorization Required**: You MUST have:
    - Written permission from the device owner
    - Signed authorization agreement
    - Clear scope of testing defined
-   - Legal review of your testing activities
 
 ### Intended Use
 
-This Proof of Concept demonstrates a known vulnerability in Android's Device Administration API (API 21-28). It is intended for:
+This Proof of Concept demonstrates password reset via **Dhizuku Device Owner** API. It is intended for:
 
 - Security researchers documenting vulnerabilities
 - Penetration testers with proper authorization
 - Educational purposes in controlled environments
-- Vendor security teams assessing their devices
-
-### Responsible Disclosure
-
-If you discover a vulnerability using this tool:
-
-1. Do NOT publicly disclose without vendor notification
-2. Follow coordinated disclosure timelines (typically 90 days)
-3. Contact the vendor's security team directly
-4. Allow time for patches before public disclosure
 
 ---
 
 ## Technical Details
 
-### Vulnerability: DeviceAdmin Password Reset (API 21-28)
+### Approach: Dhizuku Device Owner (replaces local Device Admin)
 
-**Affected Versions**: Android 5.0 (API 21) through Android 9 (API 28)
+**Previous version**: Used local `DeviceAdminReceiver` with `DevicePolicyManager.resetPassword()` — limited to API 21-28.
 
-**Fixed In**: Android 10 (API 29) with additional restrictions
+**This version**: Uses [Dhizuku](https://github.com/iamr0s/Dhizuku) to obtain **Device Owner** privileges. The password reset operation runs in Dhizuku's process with full Device Owner authority.
 
-**CVSS Score**: 7.8 (High) - Local privilege escalation
+### Architecture
 
-**CWE**: CWE-269 (Improper Privilege Management)
+```
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│   This App      │       │    Dhizuku      │       │    Android      │
+│   (Client)      │──────▶│  (DO Server)    │──────▶│   Framework     │
+│                 │  API  │                 │  DPM  │                 │
+│  Dhizuku.init() │       │ DeviceOwnerSvc  │       │ resetPassword() │
+│  bindService()  │       │ DPM access      │       │                 │
+└─────────────────┘       └─────────────────┘       └─────────────────┘
+```
 
-### Attack Vector
+**Flow:**
+1. App initializes Dhizuku API connection
+2. Requests permission from Dhizuku
+3. Binds to `DeviceOwnerService` (UserService running in Dhizuku's process)
+4. Calls `resetPassword()` through the service — executed with Device Owner privileges
 
-A malicious application with Device Administrator privileges can:
+### Prerequisites
 
-1. Reset the device lock screen password without user consent
-2. Bypass existing authentication mechanisms
-3. Gain persistent access to the device
+- **Dhizuku** app installed and activated as Device Owner
+  - Activate via ADB: `adb shell dpm set-device-owner com.rosan.dhizuku/.server.DhizukuDAReceiver`
+  - Or use Shizuku integration
+- **Android 8.0+** (API 26+) — required by Dhizuku API
+- This app granted permission in Dhizuku
 
-### Mitigation
+### Key Differences from Device Admin
 
-- Upgrade to Android 10+ where password reset requires additional user interaction
-- Only install apps from trusted sources
-- Review Device Administrator permissions carefully
-- Use enterprise MDM solutions with password policies
+| Feature | Device Admin (old) | Dhizuku Device Owner (new) |
+|---------|-------------------|---------------------------|
+| API Level | 21-28 | 26+ |
+| Privilege | Device Admin | Device Owner |
+| Password reset | Blocked on API 29+ | Works on all versions |
+| Setup | User grants admin | ADB/Shizuku activation |
+| Scope | Single app | Shared via Dhizuku API |
 
 ---
 
@@ -79,17 +75,17 @@ A malicious application with Device Administrator privileges can:
 android-deviceadmin-poc/
 ├── app/
 │   ├── src/main/
+│   │   ├── aidl/com/security/poc/deviceadminreset/
+│   │   │   └── IDeviceOwnerService.aidl   # AIDL interface for UserService
 │   │   ├── java/com/security/poc/deviceadminreset/
-│   │   │   ├── MainActivity.java      # Main exploit logic
-│   │   │   └── AdminReceiver.java     # Device admin receiver
+│   │   │   ├── MainActivity.java          # Dhizuku client logic
+│   │   │   └── DeviceOwnerService.java    # UserService (runs with DO privileges)
 │   │   ├── res/
-│   │   │   ├── layout/
-│   │   │   │   └── activity_main.xml  # UI layout
-│   │   │   └── xml/
-│   │   │       └── device_admin_policies.xml
+│   │   │   └── layout/
+│   │   │       └── activity_main.xml
 │   │   └── AndroidManifest.xml
 │   └── build.gradle
-├── build.gradle                       # Project build config
+├── build.gradle
 ├── settings.gradle
 └── README.md
 ```
@@ -101,8 +97,8 @@ android-deviceadmin-poc/
 ### Prerequisites
 
 - Android Studio Arctic Fox or later
-- Android SDK with API 21+ installed
-- Physical device or emulator (API 21-28 recommended)
+- Android SDK with API 26+ installed
+- Device with Dhizuku installed and activated as Device Owner
 
 ### Build Steps
 
@@ -113,51 +109,12 @@ android-deviceadmin-poc/
 
 ### Testing
 
-1. Install APK on target device/emulator
-2. Grant Device Administrator permission when prompted
-3. Complete multi-factor verification:
-   - Enter PIN (minimum 4 digits)
-   - Answer security question
-4. Enter new password (minimum 6 characters)
-5. Confirm password reset
-
----
-
-## Multi-Factor Verification
-
-This PoC implements defense-in-depth by requiring multiple verification steps:
-
-1. **Device Admin Activation**: Explicit user consent required
-2. **PIN Verification**: User-defined numeric PIN
-3. **Security Question**: Knowledge-based authentication
-4. **Password Complexity**: Minimum length enforcement
-5. **Confirmation Dialog**: Final user confirmation before reset
-
-**Note**: These are PoC-level controls. Production implementations should use:
-- Hardware-backed keystore
-- Biometric verification
-- Server-side validation
-- Rate limiting and lockout
-
----
-
-## Research Notes
-
-### API Behavior by Version
-
-| API Level | Version | Password Reset Behavior |
-|-----------|---------|------------------------|
-| 21-22 | 5.0-5.1 | Direct reset, no confirmation |
-| 23-25 | 6.0-7.1 | Direct reset, no confirmation |
-| 26-28 | 8.0-9 | Direct reset, may show warning |
-| 29+ | 10+ | Reset blocked without user interaction |
-
-### Exploit Limitations
-
-- Requires Device Administrator privileges
-- User must explicitly grant admin access
-- Does not work on fully managed enterprise devices
-- API 29+ requires factory reset or MDM for password changes
+1. Install and activate Dhizuku as Device Owner on the test device
+2. Install this app
+3. Open the app and tap "Initialize Dhizuku"
+4. Grant permission when Dhizuku prompts
+5. Complete verification steps (PIN + security question)
+6. Enter new password and confirm reset
 
 ---
 
@@ -169,84 +126,19 @@ By using this software, you agree to:
 2. Not distribute for malicious purposes
 3. Report any discovered vulnerabilities responsibly
 4. Comply with all applicable laws and regulations
-5. Accept full legal responsibility for your actions
-
----
-
-## CI/CD Pipeline
-
-### GitHub Actions Workflow
-
-The project includes automated CI with the following jobs:
-
-| Job | Trigger | Cache | Description |
-|-----|---------|-------|-------------|
-| **Build & Lint** | Push/PR to main, develop | Gradle | Compiles debug APK, runs lint |
-| **Unit Tests** | After build | Gradle | Runs test suite |
-| **Security Scan** | After build | N/A | Secret detection, dependency scan |
-
-### Caching Strategy
-
-- **Gradle Cache**: `~/.gradle/caches` + `~/.gradle/wrapper`
-- Cache key based on `*.gradle*` and `gradle-wrapper.properties` hash
-- Automatic restore on cache hit
-
-### Artifacts
-
-- Debug APK uploaded on every successful build
-- Retention: 30 days
-
----
-
-## Branch Protection
-
-### `main` branch (Production)
-
-- ✅ **Require PR**: All changes via pull request
-- ✅ **CI Checks**: build, test, security-scan must pass
-- ❌ **Reviews**: Not required (solo developer)
-- ✅ **Force Push**: Blocked
-- ✅ **Deletion**: Blocked
-- ✅ **Admin Enforcement**: Enabled (no bypass)
-
-### `develop` branch (Development)
-
-- ✅ **Require PR**: Changes via pull request
-- ✅ **CI Checks**: build must pass
-- ⚠️ **Reviews**: Not required (faster iteration)
-- ✅ **Force Push**: Allowed (for rebasing)
-- ✅ **Deletion**: Blocked
-
-### Workflow
-
-```
-feature-branch → develop → main
-     ↓              ↓         ↓
-   (local)      (build)   (full CI + review)
-```
 
 ---
 
 ## References
 
-- [Android Device Administration API](https://developer.android.com/reference/android/app/admin/DevicePolicyManager)
-- [CWE-269: Improper Privilege Management](https://cwe.mitre.org/data/definitions/269.html)
-- [OWASP Mobile Security Testing Guide](https://owasp.org/www-project-mobile-security-testing-guide/)
+- [Dhizuku - Device Owner Permission Sharing](https://github.com/iamr0s/Dhizuku)
+- [Dhizuku API](https://github.com/iamr0s/Dhizuku-API)
+- [Android DevicePolicyManager](https://developer.android.com/reference/android/app/admin/DevicePolicyManager)
 
 ---
 
 ## License
 
-This project is provided for educational and authorized security research purposes only. 
+This project is provided for educational and authorized security research purposes only.
 
-**NO WARRANTY**: The software is provided "as is" without warranty of any kind.
-
-**LIMITATION OF LIABILITY**: In no event shall the authors be liable for any claim, damages, or other liability arising from use of this software.
-
----
-
-**Last Updated**: 2026-06-07
-
-**Author**: Security Research PoC
-
-**Contact**: For responsible disclosure inquiries
+**Last Updated**: 2026-06-13
